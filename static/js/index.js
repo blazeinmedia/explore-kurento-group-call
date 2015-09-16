@@ -3,7 +3,8 @@
  */
 
 var socket = io.connect();
-var video;
+var mainVideoCurrentId;
+var mainVideo;
 var sessionId;
 
 var participants = {};
@@ -16,7 +17,7 @@ $(document).ready(function () {
 });
 
 window.onload = function () {
-    video = $('#main_video')[0];
+    mainVideo = $('#main_video')[0];
     /*webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options, function (error) {
      if (error) return onError(error);
      this.generateOffer(onOfferPresenter);
@@ -24,6 +25,12 @@ window.onload = function () {
 };
 
 window.onbeforeunload = function () {
+
+    // clear main video
+    mainVideo.pause();
+    mainVideo.src = ''
+    mainVideo.load();
+
     socket.disconnect();
 };
 
@@ -100,13 +107,19 @@ function onExistingParticipants(message) {
     var options = {
         localVideo: video,
         mediaConstraints: constraints,
-        onicecandidate: localParticipant.onIceCandidate.bind(localParticipant)
+        onicecandidate: localParticipant.onIceCandidate
     };
 
     localParticipant.rtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options, function (error) {
         if (error) {
             return console.error(error);
         }
+
+        // initial main video to local first
+        mainVideoCurrentId = sessionId;
+        mainVideo.src = localParticipant.rtcPeer.localVideo.src;
+        mainVideo.muted = true;
+
         console.log('local participant id : ' + sessionId);
         this.generateOffer(localParticipant.offerToReceiveVideo.bind(localParticipant));
     });

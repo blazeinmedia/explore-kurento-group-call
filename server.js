@@ -165,7 +165,7 @@ function join(socket, room, callback) {
                 id: 'iceCandidate',
                 sessionId: userSession.id,
                 candidate: candidate
-            })
+            });
         });
 
         // notify other user that new user is joining
@@ -298,7 +298,7 @@ function leaveRoom(socket, callback) {
     var userSession = userRegistry.getById(socket.id);
     var room = rooms[userSession.roomName];
 
-    console.log('notify all user that ' + userSession.id + ' is leaving the room');
+    console.log('notify all user that ' + userSession.id + ' is leaving the room ' + room.name);
 
     var usersInRoom = room.participants;
     delete usersInRoom[userSession.id];
