@@ -28,4 +28,9 @@ function Participant(id) {
         };
         sendMessage(message);
     };
+
+    this.dispose = function () {
+        console.log('Disposing participant ' + this.id);
+        this.rtcPeer.dispose();
+    };
 }

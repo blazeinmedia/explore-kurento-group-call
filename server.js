@@ -51,17 +51,26 @@ var server = app.listen(port, function () {
 var io = require('socket.io')(server);
 
 io.on('connection', function (socket) {
-    console.log('receive new client : ' + socket.id);
+
+    var userList = '';
+    for (var userId in userRegistry.usersById) {
+        userList += ' ' + userId + ',';
+    }
+    console.log('receive new client : ' + socket.id + ' currently have : ' + userList);
     socket.emit('id', socket.id);
 
     socket.on('error', function (data) {
         console.log('Connection: ' + socket.id + ' error : ' + data);
-        stop(socket.id);
+        leaveRoom(socket, function () {
+
+        });
     });
 
-    socket.on('close', function (data) {
-        console.log('Connection: ' + socket.id + ' close : ' + data);
-        stop(socket.id);
+    socket.on('disconnect', function (data) {
+        console.log('Connection: ' + socket.id + ' disconnect : ' + data);
+        leaveRoom(socket, function () {
+
+        });
     });
 
     socket.on('message', function (message) {
@@ -289,10 +298,10 @@ function leaveRoom(socket, callback) {
     var userSession = userRegistry.getById(socket.id);
     var room = rooms[userSession.roomName];
 
-    console.log('notify all user that ' + sessionId + ' is leaving the room');
+    console.log('notify all user that ' + userSession.id + ' is leaving the room');
 
     var usersInRoom = room.participants;
-    delete usersInRoom[sessionId];
+    delete usersInRoom[userSession.id];
 
     userSession.outgoingMedia.release();
     // release incoming media for the leaving user
@@ -303,13 +312,13 @@ function leaveRoom(socket, callback) {
 
     var data = {
         id: 'participantLeft',
-        sessionId: sessionId
+        sessionId: userSession.id
     };
     for (var i in usersInRoom) {
         var user = usersInRoom[i];
         // release viewer from this
-        user.incomingMedia[sessionId].release();
-        delete user.incomingMedia[sessionId];
+        user.incomingMedia[userSession.id].release();
+        delete user.incomingMedia[userSession.id];
 
         // notify all user in the room
         user.sendMessage(data);
