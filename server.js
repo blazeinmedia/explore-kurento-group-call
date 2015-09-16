@@ -29,8 +29,8 @@ var kurento = require('kurento-client');
 
 var argv = minimist(process.argv.slice(2), {
     default: {
-        as_uri: "http://192.168.1.7:8080/",
-        ws_uri: "ws://192.168.1.13:8888/kurento"
+        as_uri: "http://10.0.1.56:8080/",
+        ws_uri: "ws://10.0.1.60:8888/kurento"
     }
 });
 
@@ -244,6 +244,19 @@ function getEndpointForUser(userSession, sender, callback) {
                     }
                     return callback(error);
                 }
+                console.log('user : ' + userSession.id + ' successfully create pipeline');
+                userSession.incomingMedia[sender.id] = incomingMedia;
+
+                // add ice candidate the get sent before endpoint is established
+                var iceCandidateQueue = userSession.iceCandidateQueue[sender.id];
+                if (iceCandidateQueue) {
+                    while (iceCandidateQueue.length) {
+                        var message = iceCandidateQueue.shift();
+                        console.log('user : ' + userSession.id + ' collect candidate for : ' + message.data.sender);
+                        incomingMedia.addIceCandidate(message.candidate);
+                    }
+                }
+
                 incomingMedia.on('OnIceCandidate', function (event) {
                     var candidate = kurento.register.complexTypes.IceCandidate(event.candidate);
                     userSession.sendMessage({
@@ -252,7 +265,6 @@ function getEndpointForUser(userSession, sender, callback) {
                         candidate: candidate
                     });
                 });
-                userSession.incomingMedia[sender.id] = incomingMedia;
                 sender.outgoingMedia.connect(incomingMedia, function (error) {
                     if (error) {
                         callback(error);
@@ -312,10 +324,12 @@ function stop(sessionId) {
 function addIceCandidate(socket, message) {
 
     var user = userRegistry.getById(socket.id);
-    if (user) {
+    if (user != null) {
         // assign type to IceCandidate
         var candidate = kurento.register.complexTypes.IceCandidate(message.candidate);
         user.addIceCandidate(message, candidate);
+    } else {
+        console.error('ice candidate with no user receive : ' + socket.id);
     }
 }
 

@@ -8,6 +8,7 @@ function UserSession(id, socket, roomName) {
     this.outgoingMedia = null;
     this.incomingMedia = {};
     this.roomName = roomName;
+    this.iceCandidateQueue = {};
 }
 
 
@@ -21,6 +22,15 @@ UserSession.prototype.addIceCandidate = function (data, candidate) {
         if (webRtc) {
             console.log(this.id + ' add candidate to from : ' + data.sender);
             webRtc.addIceCandidate(candidate);
+        } else {
+            console.error(this.id + ' still does not have endpoint for : ' + data.sender);
+            if (!this.iceCandidateQueue[data.sender]) {
+                this.iceCandidateQueue[data.sender] = [];
+            }
+            this.iceCandidateQueue[data.sender].push({
+                data: data,
+                candidate: candidate
+            });
         }
     }
 };
