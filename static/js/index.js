@@ -10,14 +10,14 @@ var sessionId;
 var participants = {};
 
 $(document).ready(function () {
-    $('#register').click(function () {
-        $('#register').prop('disabled', true);
+    $("#register").click(function () {
+        $("#register").prop("disabled", true);
         register();
     });
 });
 
 window.onload = function () {
-    mainVideo = $('#main_video')[0];
+    mainVideo = $("#main_video")[0];
     /*webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options, function (error) {
      if (error) return onError(error);
      this.generateOffer(onOfferPresenter);
@@ -28,59 +28,61 @@ window.onbeforeunload = function () {
 
     // clear main video
     mainVideo.pause();
-    mainVideo.src = ''
+    mainVideo.src = "";
     mainVideo.load();
 
     socket.disconnect();
 };
 
-socket.on('id', function (id) {
-    console.log('receive id : ' + id);
+socket.on("id", function (id) {
+    console.log("receive id : " + id);
     sessionId = id;
 });
 
 // message handler
-socket.on('message', function (message) {
-    console.log('receive message type : ' + message.id);
+socket.on("message", function (message) {
+    console.log("receive message type : " + message.id);
     switch (message.id) {
-        case 'existingParticipants':
-            console.log('existingParticipans : ' + message.data);
+        case "existingParticipants":
+            console.log("existingParticipans : " + message.data);
             onExistingParticipants(message);
             break;
-        case 'newParticipantArrived':
-            console.log('newParticipantArrived : ' + message.new_user_id);
+        case "newParticipantArrived":
+            console.log("newParticipantArrived : " + message.new_user_id);
             onNewParticipant(message);
             break;
-        case 'participantLeft':
-            console.log('participantLeft : ' + message.sessionId);
+        case "participantLeft":
+            console.log("participantLeft : " + message.sessionId);
             onParticipantLeft(message);
             break;
-        case 'receiveVideoAnswer':
-            console.log('receiveVideoAnswer from : ' + message.sessionId);
+        case "receiveVideoAnswer":
+            console.log("receiveVideoAnswer from : " + message.sessionId);
             onReceiveVideoAnswer(message);
             break;
-        case 'iceCandidate':
+        case "iceCandidate":
             var participant = participants[message.sessionId];
             if (participant != null) {
                 participant.rtcPeer.addIceCandidate(message.candidate, function (error) {
                     if (error) {
-                        console.error('Error adding candidate : ' + error);
+                        console.error("Error adding candidate : " + error);
                     }
                 });
+            } else {
+                console.error(' still does not establish rtc peer for : ' + message.sessionId);
             }
             break;
         default:
-            console.error('Unrecognized message: ', message);
+            console.error("Unrecognized message: ", message);
     }
 });
 
 function sendMessage(data) {
-    socket.emit('message', data);
+    socket.emit("message", data);
 }
 
 function register() {
     var data = {
-        id: 'joinRoom',
+        id: "joinRoom",
         roomName: "Test"
     };
     sendMessage(data);
@@ -97,7 +99,8 @@ function onExistingParticipants(message) {
             }
         }
     };
-    console.log(sessionId + ' register in room ' + message.roomName);
+    console.log(sessionId + " register in room " + message.roomName);
+
     // create video for current user to send to server
     var localParticipant = new Participant(sessionId);
     participants[sessionId] = localParticipant;
@@ -120,7 +123,7 @@ function onExistingParticipants(message) {
         mainVideo.src = localParticipant.rtcPeer.localVideo.src;
         mainVideo.muted = true;
 
-        console.log('local participant id : ' + sessionId);
+        console.log("local participant id : " + sessionId);
         this.generateOffer(localParticipant.offerToReceiveVideo.bind(localParticipant));
     });
 
@@ -132,7 +135,7 @@ function onExistingParticipants(message) {
 }
 
 function receiveVideoFrom(sender) {
-    console.log(sessionId + ' receive video from ' + sender);
+    console.log(sessionId + " receive video from " + sender);
     var participant = new Participant(sender);
     participants[sender] = participant;
 
@@ -162,7 +165,7 @@ function onParticipantLeft(message) {
     delete participants[message.sessionId];
 
     // remove video tag
-    $('#video-' + participant.id).remove();
+    $("#video-" + participant.id).remove();
 }
 
 function onReceiveVideoAnswer(message) {
@@ -177,8 +180,8 @@ function createVideoForParticipant(participant) {
 
     var videoId = "video-" + participant.id;
     var videoHtml = '<video id="' + videoId + '" autoplay width="320px" height="240px" poster="img/webrtc.png"></video>';
-    $('#video_list').append(videoHtml);
+    $("#video_list").append(videoHtml);
 
     // return video element
-    return $('#' + videoId)[0];
+    return $("#" + videoId)[0];
 }
