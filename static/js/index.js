@@ -68,7 +68,7 @@ socket.on("message", function (message) {
                     }
                 });
             } else {
-                console.error(' still does not establish rtc peer for : ' + message.sessionId);
+                console.error('still does not establish rtc peer for : ' + message.sessionId);
             }
             break;
         default:
@@ -110,7 +110,7 @@ function onExistingParticipants(message) {
     var options = {
         localVideo: video,
         mediaConstraints: constraints,
-        onicecandidate: localParticipant.onIceCandidate
+        onicecandidate: localParticipant.onIceCandidate.bind(localParticipant)
     };
 
     localParticipant.rtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options, function (error) {
