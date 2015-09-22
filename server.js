@@ -30,7 +30,7 @@ var kurento = require('kurento-client');
 var argv = minimist(process.argv.slice(2), {
     default: {
         as_uri: "http://localhost:8080/",
-        ws_uri: "ws://192.168.1.13:8888/kurento"
+        ws_uri: "ws://52.76.49.170:8888/kurento"
     }
 });
 
@@ -159,7 +159,17 @@ function join(socket, room, callback) {
         }
         userSession.outgoingMedia = outgoingMedia;
 
-        outgoingMedia.on('OnIceCandidate', function (event) {
+        // add ice candidate the get sent before endpoint is established
+        var iceCandidateQueue = userSession.iceCandidateQueue[socket.id];
+        if (iceCandidateQueue) {
+            while (iceCandidateQueue.length) {
+                var message = iceCandidateQueue.shift();
+                console.error('user : ' + userSession.id + ' collect candidate for outgoing media');
+                userSession.outgoingMedia.addIceCandidate(message.candidate);
+            }
+        }
+
+        userSession.outgoingMedia.on('OnIceCandidate', function (event) {
             var candidate = kurento.register.complexTypes.IceCandidate(event.candidate);
             userSession.sendMessage({
                 id: 'iceCandidate',
@@ -296,6 +306,11 @@ function getEndpointForUser(userSession, sender, callback) {
 
 function leaveRoom(socket, callback) {
     var userSession = userRegistry.getById(socket.id);
+
+    if (userSession) {
+        return;
+    }
+
     var room = rooms[userSession.roomName];
 
     console.log('notify all user that ' + userSession.id + ' is leaving the room ' + room.name);

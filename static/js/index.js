@@ -41,7 +41,6 @@ socket.on("id", function (id) {
 
 // message handler
 socket.on("message", function (message) {
-    console.log("receive message type : " + message.id);
     switch (message.id) {
         case "existingParticipants":
             console.log("existingParticipans : " + message.data);
@@ -60,6 +59,7 @@ socket.on("message", function (message) {
             onReceiveVideoAnswer(message);
             break;
         case "iceCandidate":
+            console.log("iceCandidate from : " + message.sessionId);
             var participant = participants[message.sessionId];
             if (participant != null) {
                 participant.rtcPeer.addIceCandidate(message.candidate, function (error) {
@@ -89,6 +89,8 @@ function register() {
 }
 
 function onExistingParticipants(message) {
+    // var isFirefox = typeof InstallTrigger !== 'undefined';
+    // if (!isFirefox) {
     var constraints = {
         audio: true,
         video: {
@@ -126,6 +128,7 @@ function onExistingParticipants(message) {
         console.log("local participant id : " + sessionId);
         this.generateOffer(localParticipant.offerToReceiveVideo.bind(localParticipant));
     });
+    // }
 
     // get access to video from all the participants
     console.log(message.data);

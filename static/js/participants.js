@@ -32,5 +32,6 @@ function Participant(id) {
     this.dispose = function () {
         console.log('Disposing participant ' + this.id);
         this.rtcPeer.dispose();
+        this.rtcPeer = null;
     };
 }

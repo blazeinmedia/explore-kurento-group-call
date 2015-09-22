@@ -15,8 +15,16 @@ function UserSession(id, socket, roomName) {
 UserSession.prototype.addIceCandidate = function (data, candidate) {
     // ice candidate for this user
     if (data.sender === this.id) {
-        console.log(' add candidate to self : ' + data.sender);
-        this.outgoingMedia.addIceCandidate(candidate);
+        if (this.outgoingMedia) {
+            console.log(' add candidate to self : ' + data.sender);
+            this.outgoingMedia.addIceCandidate(candidate);
+        } else {
+            console.error(' still does not have outgoing endpoint for : ' + data.sender);
+            this.iceCandidateQueue[data.sender].push({
+                data: data,
+                candidate: candidate
+            });
+        }
     } else {
         var webRtc = this.incomingMedia[data.sender];
         if (webRtc) {
