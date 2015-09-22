@@ -30,6 +30,7 @@ var kurento = require('kurento-client');
 var argv = minimist(process.argv.slice(2), {
     default: {
         as_uri: "http://localhost:8080/",
+        //ws_uri: "ws://10.0.1.60:8888/kurento"
         ws_uri: "ws://52.76.49.170:8888/kurento"
     }
 });
@@ -61,14 +62,14 @@ io.on('connection', function (socket) {
 
     socket.on('error', function (data) {
         console.log('Connection: ' + socket.id + ' error : ' + data);
-        leaveRoom(socket, function () {
+        leaveRoom(socket.id, function () {
 
         });
     });
 
     socket.on('disconnect', function (data) {
         console.log('Connection: ' + socket.id + ' disconnect : ' + data);
-        leaveRoom(socket, function () {
+        leaveRoom(socket.id, function () {
 
         });
     });
@@ -90,7 +91,7 @@ io.on('connection', function (socket) {
                 });
                 break;
             case 'leaveRoom':
-                console.log(socket.id + ' leaveRoom : ' + message.roomName);
+                console.log(socket.id + ' leaveRoom');
                 leaveRoom(socket);
                 break;
             case 'onIceCandidate':
@@ -151,6 +152,7 @@ function join(socket, room, callback) {
     var userSession = new UserSession(socket.id, socket, room.name);
     room.pipeline.create('WebRtcEndpoint', function (error, outgoingMedia) {
         if (error) {
+            console.error('no participant in room');
             // no participants in room yet release pipeline
             if (Object.keys(room.participants).length == 0) {
                 room.pipeline.release();
@@ -170,6 +172,7 @@ function join(socket, room, callback) {
         }
 
         userSession.outgoingMedia.on('OnIceCandidate', function (event) {
+            console.log("generate outgoing candidate : " + userSession.id);
             var candidate = kurento.register.complexTypes.IceCandidate(event.candidate);
             userSession.sendMessage({
                 id: 'iceCandidate',
@@ -220,6 +223,7 @@ function receiveVideoFrom(socket, senderId, sdpOffer, callback) {
         }
 
         endpoint.processOffer(sdpOffer, function (error, sdpAnswer) {
+            console.log("process offer from : " + senderId + " to " + userSession.id);
             if (error) {
                 return callback(error);
             }
@@ -229,13 +233,13 @@ function receiveVideoFrom(socket, senderId, sdpOffer, callback) {
                 sdpAnswer: sdpAnswer
             };
             userSession.sendMessage(data);
-            return callback(null, sdpAnswer);
-        });
 
-        endpoint.gatherCandidates(function (error) {
-            if (error) {
-                return callback(error);
-            }
+            endpoint.gatherCandidates(function (error) {
+                if (error) {
+                    return callback(error);
+                }
+            });
+            return callback(null, sdpAnswer);
         });
     });
 }
@@ -277,10 +281,11 @@ function getEndpointForUser(userSession, sender, callback) {
                 }
 
                 incomingMedia.on('OnIceCandidate', function (event) {
+                    console.log("generate incoming media candidate : " + userSession.id + " from " + sender.id);
                     var candidate = kurento.register.complexTypes.IceCandidate(event.candidate);
                     userSession.sendMessage({
                         id: 'iceCandidate',
-                        sessionId: userSession.id,
+                        sessionId: sender.id,
                         candidate: candidate
                     });
                 });
@@ -304,10 +309,10 @@ function getEndpointForUser(userSession, sender, callback) {
     }
 }
 
-function leaveRoom(socket, callback) {
-    var userSession = userRegistry.getById(socket.id);
+function leaveRoom(sessionId, callback) {
+    var userSession = userRegistry.getById(sessionId);
 
-    if (userSession) {
+    if (!userSession) {
         return;
     }
 

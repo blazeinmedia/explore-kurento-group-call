@@ -30,7 +30,6 @@ window.onbeforeunload = function () {
     mainVideo.pause();
     mainVideo.src = "";
     mainVideo.load();
-
     socket.disconnect();
 };
 
@@ -62,11 +61,21 @@ socket.on("message", function (message) {
             console.log("iceCandidate from : " + message.sessionId);
             var participant = participants[message.sessionId];
             if (participant != null) {
+                console.log(message.candidate);
+                //if (participant.isAnswer) {
                 participant.rtcPeer.addIceCandidate(message.candidate, function (error) {
                     if (error) {
-                        console.error("Error adding candidate : " + error);
+                        if (message.sessionId === sessionId) {
+                            console.error("Error adding candidate to self : " + error);
+                        } else {
+                            console.error("Error adding candidate : " + error);
+                        }
                     }
                 });
+                /*} else {
+                 console.error('still does not answer rtc peer for : ' + message.sessionId);
+                 participant.iceCandidateQueue.push(message.candidate);
+                 }*/
             } else {
                 console.error('still does not establish rtc peer for : ' + message.sessionId);
             }
@@ -172,9 +181,17 @@ function onParticipantLeft(message) {
 }
 
 function onReceiveVideoAnswer(message) {
-    participants[message.sessionId].rtcPeer.processAnswer(message.sdpAnswer, function (error) {
+    var participant = participants[message.sessionId];
+    participant.rtcPeer.processAnswer(message.sdpAnswer, function (error) {
         if (error) {
             console.error(error);
+        } else {
+            participant.isAnswer = true;
+            while (participant.iceCandidateQueue.length) {
+                console.error("collected : " + participant.id + " ice candidate");
+                var candidate = participant.iceCandidateQueue.shift();
+                participant.rtcPeer.addIceCandidate(candidate);
+            }
         }
     });
 }

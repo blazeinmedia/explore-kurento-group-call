@@ -4,7 +4,6 @@
 function UserSession(id, socket, roomName) {
     this.id = id;
     this.socket = socket;
-    this.sdpOffer = null;
     this.outgoingMedia = null;
     this.incomingMedia = {};
     this.roomName = roomName;
